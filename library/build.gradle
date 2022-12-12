@@ -39,3 +39,20 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
 }
+
+ext {
+    PUBLISH_ARTIFACT_ID = "XMentionText" //你的artifact_id，一般是module的名字
+    PUBLISH_VERSION = "0.0.1"  //发布版本号
+    PUBLISH_GROUP_ID = 'com.xp.view'  //你的sonatype的group_id
+}
+
+def path = "$rootDir${File.separator}publish.gradle"
+File file = new File(path)
+if (file.exists()) {
+    println("path=$path")
+} else {
+    println("file path error")
+}
+apply from: path
+
+//apply from: '../publish.gradle'

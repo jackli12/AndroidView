@@ -1,0 +1,133 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    exclude "**/R.class"
+    exclude "**/BuildConfig.class"  //排除`BuildConfig.class`
+}
+
+//第 1 处
+ext["signing.keyId"] = '730F75DF' //签名的密钥后8位
+ext["signing.password"] = 'xp1992xp'  //签名设置的密码
+ext["signing.secretKeyRingFile"] = "E\\:\\\\github\\\\AndroidView\\\\secring.gpg" //生成的secring.gpg文件目录
+ext["ossrhUsername"] = 'pom_l'  //sonatype用户名
+ext["ossrhPassword"] = 'kj3MS.&6@iY9bUt'  //sonatype密码
+
+File secretPropsFile = project.rootProject.file('local.properties')
+if (secretPropsFile.exists()) {
+    println("the local file is exits")
+    Properties p = new Properties()
+    p.load(new FileInputStream(secretPropsFile))
+    p.each { name, value ->
+        ext[name] = value
+    }
+}
+
+//def PUBLISH_GROUP_ID = "com.xp.view"
+//def PUBLISH_ARTIFACT_ID = "XMentionText"
+//def PUBLISH_VERSION = "0.0.1"
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            println("publish-maven Log-------> PUBLISH_GROUP_ID: $PUBLISH_GROUP_ID; PUBLISH_ARTIFACT_ID: $PUBLISH_ARTIFACT_ID; PUBLISH_VERSION: $PUBLISH_VERSION")
+
+//            from components.release
+
+            //第 2 处
+            groupId PUBLISH_GROUP_ID
+            artifactId PUBLISH_ARTIFACT_ID
+            version PUBLISH_VERSION
+
+//            artifact("../plugin/com/eegets/plugin/upload/${PUBLISH_VERSION}/upload-${PUBLISH_VERSION}.jar")
+//            artifact androidSourcesJar
+
+            pom{
+                //第 3 处
+                name = PUBLISH_ARTIFACT_ID
+                description = '自定义控件' //项目描述
+                // If your project has a dedicated site, use its URL here
+                url = 'https://github.com/jackli12/AndroidView' //项目github链接
+
+                licenses {
+                    license {
+                        //协议类型，一般默认Apache License2.0的话不用改：
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        //第 4 处
+                        id = 'pom_l' //你的sonatype用户名
+                        name = 'pom_l' //你的sonatype用户名
+                        email = '741914491@qq.com' //你的sonatype注册邮箱
+                    }
+                }
+
+//                scm {
+//                        //第 5 处
+//                    //修改成你的Git地址：
+//                    connection = 'scm:git@github.com:jackli12/AndroidView.git'
+//                    developerConnection = 'scm:git@github.com:jackli12/AndroidView.git'
+//                    //分支地址：
+//                    url = 'https://github.com/jackli12/AndroidView/tree/master'
+//                }
+
+                scm{
+                    connection='https://github.com/jackli12/AndroidView'
+                    developerConnection='https://github.com/jackli12/AndroidView.git'
+                    url='https://github.com/jackli12/AndroidView'
+                }
+
+                withXml {
+                    def dependenciesNode = asNode().appendNode('dependencies')
+
+                    project.configurations.implementation.allDependencies.each {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+
+
+
+            }
+
+            repositories {
+                // The repository to publish to, Sonatype/MavenCentral
+                maven {
+                    //第 6 处
+                    name = "XMentionText"
+                    //此处用'https://s01.oss.sonatype.org'替代'https://oss.sonatype.org'，因为`https://oss.sonatype.org`会出现nexus后台无法登陆以及发布出现`Received status code 403 from server: Forbidden`问题
+//                    def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+
+//                    def  releasesRepoUrl="https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    def releasesRepoUrl="https://s01.oss.sonatype.org"
+                    def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                    // You only need this if you want to publish snapshots, otherwise just set the URL
+                    // to the release repo directly
+                    url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+                    // The username and password we've fetched earlier
+                    credentials {
+                        username 'pom_l'
+                        password 'kj3MS.&6@iY9bUt'
+                    }
+                }
+            }
+
+
+        }
+    }
+}
+
+signing {
+    sign publishing.publications
+}
+
+//signing {
+//    sign publishing.publications.release , publishing.publications.debug
+//}
